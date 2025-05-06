@@ -59,23 +59,25 @@ class CartesiaAssistant(Agent):
 class RimeAssistant(Agent):
     def __init__(self) -> None:
         super().__init__(
-            instructions="You are a voice assistant created by LiveKit. Your interface with users will be voice. "
-            "You should use short and concise responses, and avoiding usage of unpronouncable punctuation. "
-            "You were created as a demo to showcase the capabilities of LiveKit's agents framework.",
+            instructions="""
+                You are a helpful assistant communicating through voice.
+                You are currently using the Rime TTS provider.
+                You can switch to a different TTS provider if asked.
+                Don't use any unpronouncable characters.
+            """,
             stt=deepgram.STT(),
-            llm=openai.LLM(model="gpt-4o-mini"),
+            llm=openai.LLM(model="gpt-4o"),
             tts=rime.TTS(
                 sample_rate=44100, 
                 model="mistv2", 
                 speaker="abbie"
             ),
-            turn_detection=MultilingualModel(),
+            vad=silero.VAD.load()
         )
 
-    async def on_enter(self):
-        self.session.generate_reply(
-            instructions="Hey, how can I help you today?", allow_interruptions=True
-        )
+    async def on_enter(self) -> None:
+        """Called when switching to this provider"""
+        await self.session.say("Hello! I'm now using the Rime TTS voice. How does it sound?")
 
 
 class ElevenLabsAssistant(Agent):
@@ -107,7 +109,7 @@ class DeepgramAssistant(Agent):
             stt=deepgram.STT(),
             llm=openai.LLM(model="gpt-4o-mini"),
             tts=deepgram.TTS(
-                model="aura-asteria-en"
+                model="aura-2-thalia-en"
             ),
             turn_detection=MultilingualModel(),
         )
@@ -150,7 +152,7 @@ async def entrypoint(ctx: JobContext):
 
     await session.start(
         room=ctx.room,
-        agent=RimeAssistant(),  # Default to CartesiaAssistant
+        agent=DeepgramAssistant(),  # Default to CartesiaAssistant
         room_input_options=RoomInputOptions(
             # enable background voice & noise cancellation, powered by Krisp
             # included at no additional cost with LiveKit Cloud
