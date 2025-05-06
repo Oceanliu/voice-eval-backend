@@ -18,6 +18,8 @@ from livekit.plugins import (
     deepgram,
     noise_cancellation,
     silero,
+    rime,
+    elevenlabs,
 )
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
@@ -26,7 +28,7 @@ load_dotenv(dotenv_path=".env.local")
 logger = logging.getLogger("voice-agent")
 
 
-class Assistant(Agent):
+class CartesiaAssistant(Agent):
     def __init__(self) -> None:
         # This project is configured to use Deepgram STT, OpenAI LLM and Cartesia TTS plugins
         # Other great providers exist like Cerebras, ElevenLabs, Groq, Play.ht, Rime, and more
@@ -38,13 +40,79 @@ class Assistant(Agent):
             "You were created as a demo to showcase the capabilities of LiveKit's agents framework.",
             stt=deepgram.STT(),
             llm=openai.LLM(model="gpt-4o-mini"),
-            tts=cartesia.TTS(),
+            tts=cartesia.TTS(
+                sample_rate=44100,
+                model="sonic-preview",
+                voice="87bc56aa-ab01-4baa-9071-77d497064686"
+            ),
             # use LiveKit's transformer-based turn detector
             turn_detection=MultilingualModel(),
         )
 
     async def on_enter(self):
         # The agent should be polite and greet the user when it joins :)
+        self.session.generate_reply(
+            instructions="Hey, how can I help you today?", allow_interruptions=True
+        )
+
+
+class RimeAssistant(Agent):
+    def __init__(self) -> None:
+        super().__init__(
+            instructions="You are a voice assistant created by LiveKit. Your interface with users will be voice. "
+            "You should use short and concise responses, and avoiding usage of unpronouncable punctuation. "
+            "You were created as a demo to showcase the capabilities of LiveKit's agents framework.",
+            stt=deepgram.STT(),
+            llm=openai.LLM(model="gpt-4o-mini"),
+            tts=rime.TTS(
+                sample_rate=44100, 
+                model="mistv2", 
+                speaker="abbie"
+            ),
+            turn_detection=MultilingualModel(),
+        )
+
+    async def on_enter(self):
+        self.session.generate_reply(
+            instructions="Hey, how can I help you today?", allow_interruptions=True
+        )
+
+
+class ElevenLabsAssistant(Agent):
+    def __init__(self) -> None:
+        super().__init__(
+            instructions="You are a voice assistant created by LiveKit. Your interface with users will be voice. "
+            "You should use short and concise responses, and avoiding usage of unpronouncable punctuation. "
+            "You were created as a demo to showcase the capabilities of LiveKit's agents framework.",
+            stt=deepgram.STT(),
+            llm=openai.LLM(model="gpt-4o-mini"),
+            tts=elevenlabs.TTS(
+                model="eleven_multilingual_v2"
+            ),
+            turn_detection=MultilingualModel(),
+        )
+
+    async def on_enter(self):
+        self.session.generate_reply(
+            instructions="Hey, how can I help you today?", allow_interruptions=True
+        )
+
+
+class DeepgramAssistant(Agent):
+    def __init__(self) -> None:
+        super().__init__(
+            instructions="You are a voice assistant created by LiveKit. Your interface with users will be voice. "
+            "You should use short and concise responses, and avoiding usage of unpronouncable punctuation. "
+            "You were created as a demo to showcase the capabilities of LiveKit's agents framework.",
+            stt=deepgram.STT(),
+            llm=openai.LLM(model="gpt-4o-mini"),
+            tts=deepgram.TTS(
+                model="aura-asteria-en"
+            ),
+            turn_detection=MultilingualModel(),
+        )
+
+    async def on_enter(self):
         self.session.generate_reply(
             instructions="Hey, how can I help you today?", allow_interruptions=True
         )
@@ -82,7 +150,7 @@ async def entrypoint(ctx: JobContext):
 
     await session.start(
         room=ctx.room,
-        agent=Assistant(),
+        agent=RimeAssistant(),  # Default to CartesiaAssistant
         room_input_options=RoomInputOptions(
             # enable background voice & noise cancellation, powered by Krisp
             # included at no additional cost with LiveKit Cloud
